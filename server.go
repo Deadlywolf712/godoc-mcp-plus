@@ -108,7 +108,7 @@ func (d *deps) Close() {
 }
 
 // GetDoc handles the get_doc tool.
-func (d *deps) GetDoc(ctx context.Context, req *mcp.CallToolRequest, in GetDocIn) (*mcp.CallToolResult, GetDocOut, error) {
+func (d *deps) GetDoc(ctx context.Context, _ *mcp.CallToolRequest, in GetDocIn) (*mcp.CallToolResult, GetDocOut, error) {
 	if in.Path == "" {
 		return nil, GetDocOut{}, errors.New("path is required")
 	}
@@ -140,7 +140,7 @@ func (d *deps) GetDoc(ctx context.Context, req *mcp.CallToolRequest, in GetDocIn
 }
 
 // ListPackages handles the list_packages tool.
-func (d *deps) ListPackages(ctx context.Context, req *mcp.CallToolRequest, in ListPackagesIn) (*mcp.CallToolResult, ListPackagesOut, error) {
+func (d *deps) ListPackages(ctx context.Context, _ *mcp.CallToolRequest, in ListPackagesIn) (*mcp.CallToolResult, ListPackagesOut, error) {
 	if in.Path == "" {
 		return nil, ListPackagesOut{}, errors.New("path is required")
 	}

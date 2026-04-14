@@ -11,7 +11,7 @@ import (
 type DocCache struct {
 	mu      sync.Mutex
 	entries map[string]docCacheEntry
-	max     int
+	maxSize int
 	ttl     time.Duration
 }
 
@@ -20,10 +20,10 @@ type docCacheEntry struct {
 	added time.Time
 }
 
-func NewDocCache(max int, ttl time.Duration) *DocCache {
+func NewDocCache(maxSize int, ttl time.Duration) *DocCache {
 	return &DocCache{
 		entries: make(map[string]docCacheEntry),
-		max:     max,
+		maxSize: maxSize,
 		ttl:     ttl,
 	}
 }
@@ -47,7 +47,7 @@ func (c *DocCache) Get(key string) (string, bool) {
 func (c *DocCache) Put(key, value string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if len(c.entries) >= c.max {
+	if len(c.entries) >= c.maxSize {
 		var oldestKey string
 		var oldestTime time.Time
 		for k, e := range c.entries {
