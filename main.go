@@ -15,7 +15,10 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -36,6 +39,12 @@ func main() {
 		log.Fatalf("invalid -log-level %q: %v", *logLevel, err)
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: lvl}))
+
+	// 'go get' calls 'git' internally for external module resolution, so we
+	// need both on PATH. MCP hosts sometimes spawn us with a stale parent env
+	// that lacks one or both; auto-discover as a best-effort fallback.
+	ensureToolOnPath(logger, "go", goCandidates())
+	ensureToolOnPath(logger, "git", gitCandidates())
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -97,5 +106,64 @@ func main() {
 	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil {
 		logger.Error("server run failed", "err", err)
 		os.Exit(1)
+	}
+}
+
+// ensureToolOnPath guarantees the given tool is reachable by child processes
+// spawned later. If already on PATH it does nothing; otherwise it tries common
+// install locations and, if one works, prepends that bin directory to the
+// process PATH. Makes the server robust to MCP hosts that inherited a stale
+// parent env lacking the Go toolchain or git.
+func ensureToolOnPath(logger *slog.Logger, name string, candidates []string) {
+	if _, err := exec.LookPath(name); err == nil {
+		return
+	}
+	for _, c := range candidates {
+		if st, err := os.Stat(c); err == nil && !st.IsDir() {
+			binDir := filepath.Dir(c)
+			oldPath := os.Getenv("PATH")
+			sep := string(os.PathListSeparator)
+			if err := os.Setenv("PATH", binDir+sep+oldPath); err != nil {
+				logger.Warn("auto-discover: setenv PATH failed", "tool", name, "err", err)
+				return
+			}
+			logger.Info("tool auto-discovered", "tool", name, "path", c, "prepended_to_PATH", binDir)
+			return
+		}
+	}
+	logger.Warn("tool not found on PATH and auto-discovery failed; calls that need it will fail",
+		"tool", name, "tried", candidates)
+}
+
+func goCandidates() []string {
+	if runtime.GOOS == "windows" {
+		return []string{
+			`C:\Program Files\Go\bin\go.exe`,
+			`C:\Go\bin\go.exe`,
+			filepath.Join(os.Getenv("USERPROFILE"), "go", "bin", "go.exe"),
+		}
+	}
+	home, _ := os.UserHomeDir()
+	return []string{
+		"/usr/local/go/bin/go",
+		"/opt/go/bin/go",
+		filepath.Join(home, "go", "bin", "go"),
+		"/usr/bin/go",
+	}
+}
+
+func gitCandidates() []string {
+	if runtime.GOOS == "windows" {
+		return []string{
+			`C:\Program Files\Git\cmd\git.exe`,
+			`C:\Program Files\Git\bin\git.exe`,
+			`C:\Program Files (x86)\Git\cmd\git.exe`,
+			`C:\Program Files (x86)\Git\bin\git.exe`,
+		}
+	}
+	return []string{
+		"/usr/bin/git",
+		"/usr/local/bin/git",
+		"/opt/homebrew/bin/git",
 	}
 }

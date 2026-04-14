@@ -255,6 +255,13 @@ underlying error: %w`, path, err)
 1. The path may be a parent of several packages rather than a package itself.
 2. Call list_packages with the same path to discover sub-packages, then call get_doc on one of those.
 underlying error: %w`, path, err)
+	case strings.Contains(lower, "go get"):
+		return fmt.Errorf(`could not fetch module %q into the sandbox.
+1. Verify the module path is spelled correctly and the repository actually exists.
+2. For private modules, the sandbox needs GOPRIVATE / GONOSUMCHECK configured in the environment.
+3. Network access and 'git' must be reachable for VCS-based fetches.
+4. Common causes: typo in path, repository moved or deleted, auth required, offline.
+underlying error: %w`, path, err)
 	default:
 		return fmt.Errorf("get_doc failed for %q: %w", path, err)
 	}
