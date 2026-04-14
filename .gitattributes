@@ -1,0 +1,26 @@
+# Normalize line endings across platforms. Everything checks out as LF on
+# every OS; the working tree gets whatever the OS prefers (unspecified here,
+# so git falls back to core.autocrlf / the user's config for display).
+* text=auto eol=lf
+
+# Go source is LF always, regardless of platform.
+*.go        text eol=lf
+*.mod       text eol=lf
+*.sum       text eol=lf
+
+# Config formats.
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.json      text eol=lf
+*.toml      text eol=lf
+
+# Docs.
+*.md        text eol=lf
+LICENSE     text eol=lf
+
+# Binary files — never normalize.
+*.exe       binary
+*.png       binary
+*.jpg       binary
+*.gz        binary
+*.zip       binary

@@ -200,4 +200,4 @@ Inspired by [mrjoshuak/godoc-mcp](https://github.com/mrjoshuak/godoc-mcp), which
 
 ## License
 
-MIT. TODO: add a `LICENSE` file to the repository.
+MIT. See [LICENSE](LICENSE).
